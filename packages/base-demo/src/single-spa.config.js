@@ -12,9 +12,6 @@ const runScript = async (url) => {
       resolve(url);
     };
     script.onerror = reject;
-    // const firstScript = document.getElementsByTagName('script')[0];
-    // console.log(firstScript.parentNode,'firstScript.parentNode.');
-    // firstScript.parentNode.insertBefore(script, firstScript);
     const firstScript = document.body.getElementsByTagName('script')[0];
     document.body.insertBefore(script,firstScript);
   });
@@ -32,7 +29,8 @@ const getManifest = (url, bundle) =>
       const { entrypoints, publicPath } = data;
       const assets = entrypoints[bundle].assets;
       for (let i = 0; i < assets.length; i++) {
-        await runScript(publicPath + assets[i]).then(() => {
+        const name =  assets[i]?.name ||  assets[i];
+        await runScript(publicPath + name).then(() => {
           if (i === assets.length - 1) {
             resolve();
           }
@@ -41,6 +39,20 @@ const getManifest = (url, bundle) =>
     });
   });
 
+
+singleSpa.registerApplication(
+  //注册微前端服务
+  'slaveReact',
+  async () => {
+    await getManifest('//127.0.0.1:9990/asset-stats.json', 'main');
+    return window.slaveReact;
+  },
+  (location) => {
+    // addShadowDom();
+    return location.pathname.startsWith('/react');
+  }, // 配置微前端模块前缀
+  {}
+);
 singleSpa.registerApplication(
   //注册微前端服务
   'slaveVue',
@@ -57,19 +69,6 @@ singleSpa.registerApplication(
     parcels: {},
   }
 );
-singleSpa.registerApplication(
-  //注册微前端服务
-  'react-demo',
-  async () => {
-    return await getManifest('/react/mainfest.json', 'app');
-  },
-  (location) => {
-    // addShadowDom();
-    return location.pathname.startsWith('/react');
-  }, // 配置微前端模块前缀
-  {}
-);
-
 singleSpa.start(); // 启动
 
 window.addEventListener('single-spa:before-routing-event', () => {
